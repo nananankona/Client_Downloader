@@ -1,9 +1,15 @@
 # Client Downloader
 
 ## How to use
-clone repository
+
+### clone repository
+
 `git clone https://github.com/nananankona/Client_Downloader.git`
-install package
+
+### install package
+
 `npm i`
-lanch
+
+### lanch
+
 `node app`
