@@ -8,7 +8,7 @@ const axiosInstance = axios.create({
     headers: { 'User-Agent': 'Patch Client' }
 });
 
-const Dirs = ['Ragexe', 'Data', 'temp'];
+const Dirs = ['Rexe', 'Data', 'temp'];
 Dirs.forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
@@ -63,14 +63,18 @@ async function dlfile(fileName, destination) {
             writer.on('error', reject);
         });
     } catch (error) {
+        if (error.response && error.response.status === 403) {
+            console.warn(`Skipping ${fileName}: Access forbidden (HTTP 403).`);
+            return false; 
+        }
         console.error(`Failed to download ${fileName}:`, error);
         throw error;
     }
 }
 
-async function processRagexe(fileName) {
+async function processRexe(fileName) {
     const tempPath = path.join('temp', fileName);
-    const exeDestination = path.join('Ragexe', `${fileName.replace('.rgz', '.exe')}`);
+    const exeDestination = path.join('Rexe', `${fileName.replace('.rgz', '.exe')}`);
 
     console.log(`Extracting: ${fileName}`);
     try {
@@ -148,7 +152,7 @@ async function main() {
         }
     } else if (option === '1') {
 
-        console.log('1. All Download (Ratelimit warning)');
+        console.log('1. All Download');// (Ratelimit warning?)');
         console.log('2. Select Download');
         const subOption = await promptUser('>');
 
@@ -156,16 +160,18 @@ async function main() {
             const data = await getpachdata();
             const files = parsePatchData(data);
 
-            const ragexeFiles = files.filter(file => file.includes('Ragexe.rgz'));
+            const exeFiles = files.filter(file => file.includes('Ragexe.rgz'));
 
             if (subOption === '1') {
-                for (const file of ragexeFiles) {
+                for (const file of exeFiles) {
                     const destination = path.join('temp', file);
-                    await dlfile(file, destination);
-                    await processRagexe(file);
+                    const success = await dlfile(file, destination);
+                    if (success !== false) {
+                        await processRexe(file);
+                    }
                 }
             } else if (subOption === '2') {
-                ragexeFiles.forEach((file, index) => {
+                exeFiles.forEach((file, index) => {
                     console.log(`${index + 1}. ${file.replace('.rgz', '.exe')}`);
                 });
 
@@ -173,11 +179,13 @@ async function main() {
                 const indices = selected.split(',').map(num => parseInt(num.trim()) - 1);
 
                 for (const index of indices) {
-                    if (ragexeFiles[index]) {
-                        const file = ragexeFiles[index];
+                    if (exeFiles[index]) {
+                        const file = exeFiles[index];
                         const destination = path.join('temp', file);
-                        await dlfile(file, destination);
-                        await processRagexe(file);
+                        const success = await dlfile(file, destination);
+                        if (success !== false) {
+                            await processRexe(file);
+                        }
                     }
                 }
             }
