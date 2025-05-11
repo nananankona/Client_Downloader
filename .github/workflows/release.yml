@@ -31,23 +31,23 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'  # Node.js 20 を使用
+        node-version: '20.19.1' 
 
     - name: Install dependencies
       run: npm install
 
-    - name: Install pkg globally
-      run: npm install -g pkg
+    - name: Install specific pkg version
+      run: npm install -g pkg@5.8.1
 
     - name: Build executable
       run: |
-        pkg app.js --targets=node20-win-x64 --output=App.exe
-        mkdir dist
-        mv App.exe dist/
+        pkg app.js --targets=node18-win-x64 --output=App.exe
+        mkdir -p dist
+        if (Test-Path "App.exe") { mv App.exe dist/ } else { exit 1 }
 
-    - name: Verify EXE exists
+    - name: Verify build
       run: |
-        ls dist/ 
+        ls dist/
         if (-not (Test-Path "dist/App.exe")) { exit 1 }
 
     - name: Create release
