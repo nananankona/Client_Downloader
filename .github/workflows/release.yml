@@ -1,0 +1,59 @@
+name: Release Executable
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+      release_type:
+        description: 'Release type (release/prerelease)'
+        required: true
+        type: choice
+        options:
+          - release
+          - prerelease
+      draft:
+        description: 'Create as draft release?'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest  # pkg は Windows 上でビルドするのが簡単
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Install pkg globally
+      run: npm install -g pkg
+
+    - name: Build executable
+      run: |
+        pkg app.js --targets=node20-win-x64 --output=App.exe
+        mkdir dist
+        mv App.exe dist/
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: Release v${{ github.event.inputs.version }}
+        body: "Built executable for Windows"
+        prerelease: ${{ github.event.inputs.release_type == 'prerelease' }}
+        draft: ${{ github.event.inputs.draft }}
+        files: |
+          dist/App.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
